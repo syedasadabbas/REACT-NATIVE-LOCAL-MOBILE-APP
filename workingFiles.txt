@@ -1,0 +1,1053 @@
+App.tsx :
+
+// DYNAMIC GRID CHANGES
+import React, { useState } from 'react';
+import { View } from 'react-native';
+import LoginPage from './LoginPage';
+import GridPage from './GridPage';
+import FormPage from './FormPage';
+
+interface CustomerInfo {
+  cusCodeVal: number;
+}
+
+interface LubeInfo {
+  lubeName: string;
+  lubeNumber: number;
+  lubeCategory: string;
+  lubeCost: number;
+}
+
+interface FormData {
+  cusCodeVal: number;
+  customerName: string;
+  customerNumber: string;
+  carModel: string;
+  carNumber: string;
+  lubePrice: string;
+  dateTime: string;
+  lubeName: string;
+  lubeNumber: number;
+  lubeCategory: string;
+  lubeCost: number;
+
+}
+
+const App = () => {
+  const [isLoggedIn, setLoggedIn] = useState<boolean>(false);
+  const [customerCode, setCustomerCode] = useState<number>(0);
+  const [selectedLube, setSelectedLube] = useState<LubeInfo | null>(null);
+  const [isOnFormPage, setIsOnFormPage] = useState<boolean>(false);
+  const handleLogin = (customerCode: number) => {
+    setLoggedIn(true);
+    setCustomerCode(customerCode);
+  };
+
+  const handleGridPress = (lubeName: string, lubeNumber: number, lubeCategory: string, lubeCost: number) => {
+    setIsOnFormPage(true);
+    setSelectedLube({ lubeName, lubeNumber, lubeCategory, lubeCost });
+  };
+  
+  const handleFormSubmit = (formData: FormData) => {
+    // Perform submission logic here
+    console.log('Submitted form data:', formData);
+    setIsOnFormPage(false); // Reset selectedLube after form submission
+  };
+  const handleBackToGridPage = () => {
+    setIsOnFormPage(false);
+  };
+
+
+  return (
+    <View>
+      {!isLoggedIn && <LoginPage 
+      onLogin={handleLogin} />}
+      {isLoggedIn && !isOnFormPage && (
+        <GridPage onGridPress={handleGridPress} customerCode={customerCode} />
+      )}
+      {isLoggedIn && isOnFormPage && selectedLube && (
+        <FormPage
+          lubeName={selectedLube.lubeName}
+          lubeNumber={selectedLube.lubeNumber}
+          lubeCategory={selectedLube.lubeCategory}
+          lubeCost={selectedLube.lubeCost}
+          onSubmit={handleFormSubmit}
+          customerCode={customerCode}
+          onBackToGridPage={handleBackToGridPage}
+        />
+      )}
+    </View>
+  );
+};
+
+export default App;
+
+
+---> 2. LoginPage.js :
+import React, { useState } from 'react';
+import { View, TextInput, TouchableOpacity, Image, Text, ImageBackground, ActivityIndicator } from 'react-native';
+import PSO_logo from './PSO_logo.png';
+
+const LoginPage = ({ onLogin }) => {
+  const [customerCode, setCustomerCode] = useState('');
+  const [password, setPassword] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleLogin = async () => {
+    // Perform validation and authentication logic here
+
+    setIsLoading(true);
+      try {
+        if(!customerCode || !password){
+          throw Error('Please enter both customer code and password')
+        }
+        let response= await fetch('http://10.0.2.2:80/api/getapi.php', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            cusCode: customerCode,
+            cusPass: password,
+          }),
+        });
+
+        let data= await  response.json();
+        setIsLoading(false);
+        // console.warn(data);
+        if(data?.cus_code) {
+          // do login
+          alert("Login Successful");
+          setIsLoading(false);
+          onLogin(Number(customerCode));
+          // alert("Login Successful");
+        }
+        else 
+        {
+          throw Error("Pump Code or Username is incorrect!");
+        }
+      } catch (error) {
+        setIsLoading(false);
+        alert(error || 'Something went wrong');
+      }
+   
+  };
+
+  return (
+    <ImageBackground source={require('../PSO_APP/assets/BG_grid.png')} style={flexGrow = 1}>
+
+    <View style={{ alignItems: 'center', paddingTop: 20, height: '100%' }}>
+      <Image source={PSO_logo} style={{ width: 150, height: 150, marginBottom: 15, marginTop: 15 }} />
+
+        <Text style={{ fontSize: 26, fontWeight: 'bold', marginBottom: 10, marginTop:5, color: 'black' }}>Pump Code</Text>
+      <View style={{ width: '55%', borderWidth: 1, borderColor: 'black', borderRadius: 5 }}>
+        <TextInput
+          style={{ fontSize: 18.5, padding: 10, fontWeight: 'bold', textAlign: 'center', borderColor: 'green', borderWidth:3 , color:'black'}}
+          placeholder="Enter Pump Code"
+          placeholderTextColor="black" 
+          onChangeText={setCustomerCode}
+          accessibilityLabel="customerCodeInput"
+        />
+      </View>
+
+        <Text style={{ fontSize: 26, fontWeight: 'bold', marginTop:15, marginBottom:10, color: 'black'  }}>Password</Text>
+      <View style={{ width: '55%', borderWidth: 1, borderColor: 'black', borderRadius: 5, marginBottom:17, color:'black'}}>
+        <TextInput
+          style={{ fontSize: 18.5, padding: 10, fontWeight: 'bold', textAlign: 'center', borderColor: 'green', borderWidth:3 , color:'black'}}
+          placeholder="Enter Password"
+          placeholderTextColor="black" 
+          secureTextEntry
+          value={password}
+          onChangeText={setPassword}
+          accessibilityLabel="passwordInput"
+        />
+      </View>
+
+      <TouchableOpacity
+          style={{
+            width: '22%',
+            backgroundColor: '#2196F3',
+            borderRadius: 35,
+            marginTop: 5,
+            height: 47.5,
+            padding:5,
+            alignItems:'center',
+            opacity: isLoading ? 1 : 1, // Dim the TouchableOpacity when loading
+          }}
+          onPress={handleLogin}
+          disabled={isLoading} // Disable TouchableOpacity when loading
+        >
+          {isLoading ? (
+            <ActivityIndicator color="white" size="small" />
+          ) : (
+            <Text style={{ fontSize: 20, color: 'white', textAlign: 'center', lineHeight: 24, padding: 5, fontWeight: 'bold' }}>
+              Login
+            </Text>
+          )}
+        </TouchableOpacity>
+    </View>
+  </ImageBackground>
+  );
+};
+
+export default LoginPage;
+
+
+---> 3. GridPage.js :
+
+import React, { useState, useEffect } from 'react';
+import { View, TouchableOpacity, Text, ScrollView, Alert } from 'react-native';
+
+const GridPage = ({ onGridPress, customerCode }) => {
+  const [lubesData, setLubesData] = useState([]);
+  const [error, setError] = useState(null);
+
+  const fetchData = async () => {
+    try {
+      console.log("Fetching data from the server...");
+      const response = await fetch('http://192.168.18.14/api/api.php');
+      if (!response.ok) {
+        throw new Error('Network response was not ok');
+      }
+      const data = await response.json();
+      console.log("Data fetched successfully:", data);
+      setLubesData(data);
+      setError(null); // Clear any previous error
+    } catch (error) {
+      setError('Error fetching data from the server.');
+      console.error('Error:', error); // Log the specific error for debugging
+    }
+  };
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  const handleGridPress = (lubeName, lubeLtr, lubeCategory, lubeCost) => {
+    onGridPress(lubeName, lubeLtr, lubeCategory, lubeCost, customerCode);
+  };
+
+  console.log("lubesData:", lubesData);
+
+  return (
+    <ScrollView contentContainerStyle={{ flexGrow: 1, backgroundColor: 'transparent', padding: 10}}>
+      <Text style={{ fontSize: 52, fontWeight: 'bold', marginBottom: 30, textAlign: 'center', color: 'blue' }}>LUBRICANTS</Text>
+
+      {error ? (
+        <Text style={{ fontSize: 20, fontWeight: 'bold', color: 'red', marginBottom: 20, textAlign: 'center' }}>
+          {error}
+        </Text>
+      ) : lubesData.length === 0 ? (
+        <Text style={{ fontSize: 20, fontWeight: 'bold', color: 'black', marginBottom: 20, textAlign: 'center' }}>
+          No data available.
+        </Text>
+      ) : (
+        <View style={{ flex: 1, flexDirection: 'row', flexWrap: 'wrap',margin:12, justifyContent: 'center' }}>
+          {lubesData.map((lube, index) => (
+            <TouchableOpacity
+              key={index}
+              style={{
+                width: '48%',
+                aspectRatio: 1,
+                backgroundColor: 'green',
+                justifyContent: 'center',
+                alignItems: 'center',
+                marginBottom: 6,
+                marginHorizontal:3,
+                borderRadius: 10,
+                padding: 10,
+                borderColor: 'blue',
+                borderWidth: 8,
+              }}
+              onPress={() => handleGridPress(lube.lube_name, lube.lube_ltr, lube.lube_category, lube.cost)}
+            >
+              <Text style={{ fontSize: 25, fontWeight: 'bold', color: 'yellow', textAlign: 'center' }}>{`${lube.lube_name}\n${lube.lube_ltr}`+' LTR'}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      )}
+    </ScrollView>
+  );
+};
+
+export default GridPage;
+
+
+---> 4. FormPage.js :
+
+// DYNAMIC GRID CHANGES & CHANGE OF DATE - TIME FORMAT
+
+
+import React, { useState } from 'react';
+import { View, TextInput, TouchableOpacity, Text, ScrollView, ImageBackground, ActivityIndicator  } from 'react-native';
+import moment from 'moment';
+
+const FormPage = ({ lubeName, lubeNumber, lubeCategory, lubeCost, onSubmit, customerCode, onBackToGridPage }) => {
+  const [customerName, setCustomerName] = useState('');
+  const [customerNumber, setCustomerNumber] = useState('');
+  const [carModel, setCarModel] = useState('');
+  const [carNumber, setCarNumber] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const handleFormSubmit = async () => {
+    if (
+      customerName &&
+      customerNumber &&
+      carModel &&
+      carNumber 
+    ) {
+      const formData = new FormData();
+      formData.append('cusCode', customerCode);
+      formData.append('cusName', customerName);
+      formData.append('cusNum', customerNumber);
+      formData.append('carModel', carModel);
+      formData.append('carNum', carNumber);
+      formData.append('lubeName', lubeName);
+      formData.append('lubeLtr', lubeNumber);
+      formData.append('lubeCategory', lubeCategory);
+      formData.append('lubeCost', lubeCost);
+      // Format the date and time using moment.js
+    const formattedDateTime = moment(new Date()).format('YYYY-MM-DD HH:mm:ss');
+    formData.append('dateTime', formattedDateTime);
+      console.log('Form Data:', formData);
+
+  try {
+    setIsLoading(true);
+    const response = await fetch('http://10.0.2.2:80/api/form_insert.php', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+      
+      body: formData,
+    });
+    setIsLoading(false);
+    console.log('Raw Response:', response);
+
+    if (response.ok) {
+      alert('Data inserted successfully');
+      const responseData = await response.text();
+console.log('Raw Response Data:', responseData);
+
+    } else {
+      throw new Error('An error occurred during the request');
+    }
+  } catch (error) {
+    setIsLoading(false);
+    console.error(error);
+    alert('An error occurred: ' + error.message);
+  }
+
+    onSubmit(formData);
+    onBackToGridPage();
+}
+else
+{
+  alert("PLEASE FILL IN ALL THE FIELDS")
+}
+  };
+  const handleGoToGridPage = () => {
+    // alert("GRID PAGE SUCCESSFULLY PRESSED")
+    onBackToGridPage(); // Simply call the onBackToGridPage callback to go back to GridPage
+  };
+
+  return (
+    <ImageBackground source={require('../PSO_APP/assets/BG_grid.png')} style={{ height: '100%', flexGrow: 1 }}>
+      <ScrollView contentContainerStyle={{ flexGrow: 1, backgroundColor: 'transparent' }}>
+
+        <View style={{ backgroundColor: 'transparent' }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', height: '8.5%', backgroundColor: 'blue', paddingHorizontal: 0, width: '100%' }}>
+          {/* Go to GridPage TouchableOpacity */}
+          <TouchableOpacity
+            style={{ backgroundColor: 'green', paddingVertical: 10, paddingHorizontal: 10, flex: 0.15 }}
+            onPress={handleGoToGridPage}
+          >
+            <Text style={{ fontSize: 15, fontWeight: 'bold', color: 'white', height:'100%'}}>
+              Go {'\n'}Back
+            </Text>
+          </TouchableOpacity>
+          <Text style={{ fontSize: 28, fontWeight: 'bold', color: 'white', textAlign: 'center', flex: 0.85}}>
+            CUSTOMER INFO
+          </Text>
+        </View>
+
+      <Text style={{ fontSize: 29, fontWeight: 'bold', color: 'black',textAlign:'center', marginTop: 20, paddingHorizontal: 20 }}>
+      Pump Code: {customerCode}
+    </Text>
+      <Text style={{ fontSize: 24, fontWeight: 'bold',color:'black', marginTop: 20, paddingHorizontal: 20 }}>
+        Lube Name: {lubeName}
+      </Text>
+      <Text style={{ fontSize: 24, fontWeight: 'bold',color:'black', paddingHorizontal: 20 }}>
+        Lube Litre: {lubeNumber + ' LTR'}
+      </Text>
+      <Text style={{ fontSize: 24, fontWeight: 'bold',color:'black', paddingHorizontal: 20 }}>
+        Lube Category: {lubeCategory}
+      </Text>
+      <Text style={{ fontSize: 24, fontWeight: 'bold',color:'black', marginBottom: 20, paddingHorizontal: 20 }}>
+        Lube Cost: {lubeCost + ' Rupees'}
+      </Text>
+
+      <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 20, paddingHorizontal: 20 }}>
+        <Text style={{ fontSize: 22, fontWeight: 'bold',color:'black', marginRight: 10 }}>Customer Name:</Text>
+        <TextInput
+          style={{ fontSize: 20,backgroundColor:'beige',fontWeight:'bold', borderWidth: 2, borderColor: 'black', padding: 5, flex: 1, color:'black' }}
+          placeholder="Enter Customer Name"
+          placeholderTextColor="black" 
+          value={customerName}
+          onChangeText={setCustomerName}
+        />
+      </View>
+
+      <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 20, paddingHorizontal: 20 }}>
+        <Text style={{ fontSize: 22, fontWeight: 'bold',color:'black', marginRight: 10 }}>Contact Number:</Text>
+        <TextInput
+          style={{ fontSize: 20,backgroundColor:'beige',fontWeight:'bold', borderWidth: 2, borderColor: 'black', padding: 5, flex: 1 , color:'black'}}
+          placeholder="Enter Contact Number"
+          placeholderTextColor="black" 
+          value={customerNumber}
+          onChangeText={setCustomerNumber}
+        />
+      </View>
+
+      <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 20, paddingHorizontal: 20 }}>
+        <Text style={{ fontSize: 22, fontWeight: 'bold',color:'black', marginRight: 10 }}>Vehicle Model:</Text>
+        <TextInput
+          style={{ fontSize: 20,backgroundColor:'beige',fontWeight:'bold', borderWidth: 2, borderColor: 'black', padding: 5, flex: 1, color:'black' }}
+          placeholder="Enter Vehicle Model"
+          placeholderTextColor="black" 
+          value={carModel}
+          onChangeText={setCarModel}
+        />
+      </View>
+
+      <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 45, paddingHorizontal: 20 }}>
+        <Text style={{ fontSize: 22, fontWeight: 'bold',color:'black', marginRight: 10 }}>Vehicle Number:</Text>
+        <TextInput
+          style={{ fontSize: 20,backgroundColor:'beige',fontWeight:'bold', borderWidth: 2, borderColor: 'black', padding: 5, flex: 1, color:'black' }}
+          placeholder="Enter Vehicle Number"
+          placeholderTextColor="black" 
+          value={carNumber}
+          onChangeText={setCarNumber}
+        />
+      </View>
+
+      <View style={{ alignItems: 'center' }}>
+        <TouchableOpacity
+          style={{
+            backgroundColor: 'blue',
+            paddingVertical: 10,
+            paddingHorizontal: 20,
+            borderRadius: 30,
+            marginBottom: 20,
+            height: '26%',
+            width: '30%',
+          }}
+          onPress={handleFormSubmit}
+          disabled={isLoading}
+        >
+          {isLoading ? ( // Show loading indicator or the "Submit" text based on isLoading state
+            <ActivityIndicator color="white" size="small" />
+          ) : (
+            <Text style={{ fontSize: 20, textAlign: 'center', fontWeight: 'bold', color: 'white' }}>Submit</Text>
+          )}
+        </TouchableOpacity>
+      </View>
+    </View>
+        
+      </ScrollView>
+    </ImageBackground>
+  );
+};
+
+export default FormPage;
+
+        A P I ' s
+---> 5. getapi.php
+<?php
+	$CN=mysqli_connect("localhost","root","");
+	$DB=mysqli_select_db($CN, "pso_app");
+
+	$jsonString = file_get_contents('php://input'); // Retrieve the JSON string sent from React Native
+
+	$data = json_decode($jsonString); // Convert the JSON string to a PHP object
+
+	$cusCode = $data->cusCode; // Access the 'user' value from the PHP object	
+	$cusPass = $data->cusPass; // Access the 'pass' value from the PHP object
+
+
+	$SQ="select * from cus_login where cus_code=$cusCode AND cus_pass=$cusPass";
+	$Table=mysqli_query($CN, $SQ);
+	
+	if(mysqli_num_rows($Table)>0)
+	{
+		$Row=mysqli_fetch_assoc($Table);
+		$CUScode=$Row["cus_code"];
+		$PASS=$Row["cus_pass"];
+		$Response[]=array("cus_code"=>$CUScode, "cus_pass"=>$PASS);
+	}
+	else
+	{
+		$Response[]=array("cus_code"=>"", "cus_pass"=>"");
+	}
+	echo json_encode($Response[0]);
+	
+	/**
+	 * {
+	 * "status":200,
+	 * "error": true | false,
+	 * "body":""
+	 * "message":" error message"
+	 * }
+	 */
+	
+
+?>
+
+---> 6. api.php
+<?php
+// Allow requests from any origin (you can restrict it to specific domains if needed)
+header('Access-Control-Allow-Origin: *');
+// Set allowed request methods (e.g., GET, POST, etc.)
+header('Access-Control-Allow-Methods: GET, POST, OPTIONS');
+// Set allowed headers (e.g., Content-Type, Authorization, etc.)
+header('Access-Control-Allow-Headers: Content-Type, Authorization');
+// Allow credentials (if your app sends cookies or authentication headers)
+header('Access-Control-Allow-Credentials: true');
+
+header('Content-Type: application/json');
+
+// Replace these with your MySQL database credentials
+$servername = "localhost";
+$username = "root";
+$password = "";
+$dbname = "pso_app";
+
+// Create connection
+$conn = new mysqli($servername, $username, $password, $dbname);
+
+// Check connection
+if ($conn->connect_error) {
+    die("Connection failed: " . $conn->connect_error);
+}
+
+// Fetch data from the 'lubricants' table
+$sql = "SELECT lube_name, lube_ltr, lube_category, cost FROM lubricants";
+$result = $conn->query($sql);
+
+if ($result === false) {
+    // Log the error to a file or output it to the response for debugging
+    error_log('MySQL Error: ' . $conn->error);
+    echo json_encode(['error' => 'An error occurred while fetching data.']);
+} else {
+    if ($result->num_rows > 0) {
+        // Store the data in an array
+        $data = array();
+        while ($row = $result->fetch_assoc()) {
+            $data[] = $row;
+        }
+
+        // Close the connection
+        $conn->close();
+
+        // Return the data as JSON
+        echo json_encode($data, JSON_UNESCAPED_UNICODE);
+    } else {
+        // Close the connection
+        $conn->close();
+
+        // Return an error message if no data found
+        echo json_encode(array("message" => "No data found in the table."));
+    }
+}
+?>
+
+
+---> 7. form_insert.php :
+<!-- <?php
+// header('Content-Type: application/json');
+// // Allow requests from any origin
+// header("Access-Control-Allow-Origin: *");
+// // Allow specific HTTP methods
+// header("Access-Control-Allow-Methods: POST");
+// // Allow specific headers
+// header("Access-Control-Allow-Headers: Content-Type");
+
+// $hostname = 'localhost';
+// $username = 'root';
+// $password = '';
+// $database = 'pso_app';
+
+// $conn = new mysqli($hostname, $username, $password, $database);
+
+// $jsonString = file_get_contents('php://input');
+// error_log('Request Data: ' . $jsonString);
+// if ($conn->connect_error) {
+//     die("Connection failed: " . $conn->connect_error);
+// }
+
+// // Retrieve data from the form
+// // $customerCode = $_POST['cusCode'];
+// // $customerName = $_POST['cusName'];
+// // $customerNumber = $_POST['cusNum'];
+// // $carModel = $_POST['carModel'];
+// // $carNumber = $_POST['carNum'];
+// // $carBrand = $_POST['carBrand'];
+// // $engineType = $_POST['engineType'];
+// // $vehicleType = $_POST['vehType'];
+// // $lubeName = $_POST['lubeName'];
+// // $lubeNumber = $_POST['lubeLtr'];
+// // $dateTime = $_POST['dateTime'];
+
+
+// // Retrieve data from the form
+// $customerCode = isset($_POST['cusCode']) ? $_POST['cusCode'] : "null";
+// $customerName = isset($_POST['cusName']) ? $_POST['cusName'] : "null";
+// $customerNumber = isset($_POST['cusNum']) ? $_POST['cusNum'] : "null";
+// $carModel = isset($_POST['carModel']) ? $_POST['carModel'] : "null";
+// $carNumber = isset($_POST['carNum']) ? $_POST['carNum'] : "null";
+// $lubePrice = isset($_POST['lubeCost']) ? $_POST['lubeCost'] : "null";
+// // $carBrand = isset($_POST['carBrand']) ? $_POST['carBrand'] : "null";
+// // $engineType = isset($_POST['engineType']) ? $_POST['engineType'] : "null";
+// // $vehicleType = isset($_POST['vehType']) ? $_POST['vehType'] : "null";
+// $lubeName = isset($_POST['lubeName']) ? $_POST['lubeName'] : "null";
+// $lubeNumber = isset($_POST['lubeLtr']) ? $_POST['lubeLtr'] : "null";
+// $dateTime = isset($_POST['dateTime']) ? $_POST['dateTime'] : "null";
+
+// // ... (rest of the code)
+
+// error_log('customerCode: ' . $customerCode);
+// error_log('customerName: ' . $customerName);
+// error_log('customerNumber: ' . $customerNumber);
+// error_log('carModel: ' . $carModel);
+// error_log('carNumber: ' . $carNumber);
+// error_log('lubePrice: ' . $lubePrice);
+// // error_log('carBrand: ' . $carBrand);
+// // error_log('engineType: ' . $engineType);
+// // error_log('vehicleType: ' . $vehicleType);
+// error_log('lubeName: ' . $lubeName);
+// error_log('lubeNumber: ' . $lubeNumber);
+// error_log('dateTime: ' . $dateTime);
+
+
+// // Prepare and bind the INSERT statement
+// try {
+//     $conn->begin_transaction();
+//     // Your database connection and INSERT statement here
+//     // Prepare and bind the INSERT statement
+// $stmt = $conn->prepare("INSERT INTO lube_sale (cus_code, cus_name, cus_num, car_model, car_num,cost,lube_name, lube_ltr, date_time) VALUES (?, ?, ?, ?, ?, ?,?, ?, ?)");
+// $stmt->bind_param("sssssssss", $customerCode, $customerName, $customerNumber, $carModel, $carNumber,$lubePrice, $lubeName, $lubeNumber, $dateTime);
+
+//     // $stmt = $conn->prepare("INSERT INTO lube_sale (cus_code, cus_name, cus_num, car_model, car_num, car_brand, engine_type, veh_type, lube_name, lube_ltr, date_time) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+//     // $stmt->bind_param("sssssssssss", $customerCode, $customerName, $customerNumber, $carModel, $carNumber, $carBrand, $engineType, $vehicleType, $lubeName, $lubeNumber, $dateTime);
+//     // Execute the statement
+//     $conn->commit();
+//     $stmt->execute();
+//     // Commit the transaction
+    
+//     // Close the statement
+//     $stmt->close();
+    
+//     // Close the database connection
+//     $conn->close();
+    
+//     // Prepare the response as an associative array
+//     $response = array("status" => 200, "message" => "Data inserted successfully");
+    
+//     // Convert the response to JSON and echo it
+//     echo json_encode($response);
+
+//   } catch (Exception $e) {
+//     // Log the exception message
+//     error_log($e->getMessage());
+//   }
+
+?> -->
+
+<!-- DYNAMIC GRID IMPLEMENTATION -->
+
+<?php
+header('Content-Type: application/json');
+// Allow requests from any origin
+header("Access-Control-Allow-Origin: *");
+// Allow specific HTTP methods
+header("Access-Control-Allow-Methods: POST");
+// Allow specific headers
+header("Access-Control-Allow-Headers: Content-Type");
+
+$hostname = 'localhost';
+$username = 'root';
+$password = '';
+$database = 'pso_app';
+
+$conn = new mysqli($hostname, $username, $password, $database);
+
+$jsonString = file_get_contents('php://input');
+error_log('Request Data: ' . $jsonString);
+if ($conn->connect_error) {
+    die("Connection failed: " . $conn->connect_error);
+}
+
+
+// Retrieve data from the form
+$customerCode = isset($_POST['cusCode']) ? $_POST['cusCode'] : "null";
+$customerName = isset($_POST['cusName']) ? $_POST['cusName'] : "null";
+$customerNumber = isset($_POST['cusNum']) ? $_POST['cusNum'] : "null";
+$carModel = isset($_POST['carModel']) ? $_POST['carModel'] : "null";
+$carNumber = isset($_POST['carNum']) ? $_POST['carNum'] : "null";
+$lubeName = isset($_POST['lubeName']) ? $_POST['lubeName'] : "null";
+$lubeNumber = isset($_POST['lubeLtr']) ? $_POST['lubeLtr'] : "null";
+$lubeCategory = isset($_POST['lubeCategory']) ? $_POST['lubeCategory'] : "null";
+$lubeCost = isset($_POST['lubeCost']) ? $_POST['lubeCost'] : "null";
+$dateTime = isset($_POST['dateTime']) ? $_POST['dateTime'] : "null";
+
+
+// ... (rest of the code)
+
+error_log('customerCode: ' . $customerCode);
+error_log('customerName: ' . $customerName);
+error_log('customerNumber: ' . $customerNumber);
+error_log('carModel: ' . $carModel);
+error_log('carNumber: ' . $carNumber);
+error_log('lubeName: ' . $lubeName);
+error_log('lubeNumber: ' . $lubeNumber);
+error_log('lubeCategory: ' . $lubecategoryr);
+error_log('lubeCost: ' . $lubeCost);
+error_log('dateTime: ' . $dateTime);
+
+
+// Prepare and bind the INSERT statement
+try {
+    $conn->begin_transaction();
+    // Your database connection and INSERT statement here
+    // Prepare and bind the INSERT statement
+$stmt = $conn->prepare("INSERT INTO lube_sale (cus_code, cus_name, cus_num, car_model, car_num,lube_name, lube_ltr,lube_category, cost, date_time) VALUES (?, ?, ?, ?, ?, ?,?, ?, ?,?)");
+$stmt->bind_param("ssssssssss", $customerCode, $customerName, $customerNumber, $carModel, $carNumber, $lubeName, $lubeNumber,$lubeCategory, $lubeCost, $dateTime);
+
+    // $stmt = $conn->prepare("INSERT INTO lube_sale (cus_code, cus_name, cus_num, car_model, car_num, car_brand, engine_type, veh_type, lube_name, lube_ltr, date_time) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+    // $stmt->bind_param("sssssssssss", $customerCode, $customerName, $customerNumber, $carModel, $carNumber, $carBrand, $engineType, $vehicleType, $lubeName, $lubeNumber, $dateTime);
+    // Execute the statement
+    $conn->commit();
+    $stmt->execute();
+    // Commit the transaction
+    
+    // Close the statement
+    $stmt->close();
+    
+    // Close the database connection
+    $conn->close();
+    
+    // Prepare the response as an associative array
+    $response = array("status" => 200, "message" => "Data inserted successfully");
+    
+    // Convert the response to JSON and echo it
+    echo json_encode($response);
+
+  } catch (Exception $e) {
+    // Log the exception message
+    error_log($e->getMessage());
+  }
+
+?>
+
+
+
+
+
+
+
+
+
+
+
+
+import React, { useState, useEffect } from 'react';
+import { View, TextInput, TouchableOpacity, Text, ScrollView, ImageBackground, ActivityIndicator  } from 'react-native';
+import moment from 'moment';
+import Sound from 'react-native-sound';const playSuccessSound = () => {
+  const successSound = new Sound('success.mp3', Sound.MAIN_BUNDLE, (error) => {
+    if (error) {
+      console.log('Failed to load the sound', error);
+      return;
+    }
+    successSound.setVolume(1.0);
+    // Play the sound when it's loaded successfully
+    successSound.play((success) => {
+      if (success) {
+        console.log('Sound played successfully');
+        successSound.release(); // Release the sound after it's played
+      } else {
+        console.log('Sound playback failed');
+      }
+    });
+  });
+};
+
+const FormPage = ({ lubeName, lubeNumber, lubeCategory, onSubmit, customerCode, onBackToGridPage }) => {
+  const [customerName, setCustomerName] = useState('');
+  const [customerNumber, setCustomerNumber] = useState('');
+  const [carModel, setCarModel] = useState('');
+  const [carNumber, setCarNumber] = useState('');
+  const [stationName, setStationName] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [isOpen, setIsOpen] = useState(false);
+  const [lubeQuantity, setLubeQuantity] = useState('');
+  const [division, setDivision] = useState('');
+
+  // Function to handle the change in the Lube quantity input
+  const handleLubeQuantityChange = (text) => {
+    const numericRegex = /^[0-9]*$/;
+    if (numericRegex.test(text) || text === '') {
+      setLubeQuantity(text);
+    }
+  };
+  useEffect(() => {
+    // Fetch station name from the API here
+    fetchStationName();
+  }, []);
+
+  const fetchStationName = async () => {
+    try {
+      const response = await fetch('http://10.0.2.2:80/api/getStationName.php', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: `customerCode=${customerCode}`,
+      });
+      const data = await response.json();
+      if (response.ok) {
+        setStationName(data.stationName);
+        setDivision(data.division);
+      } else {
+        throw new Error(data.message);
+      }
+    } catch (error) {
+      console.error(error);
+      alert('An error occurred while fetching the station name: ' + error.message);
+    }
+  };
+  const fetchDivision = async (stationName) => {
+    try {
+      const response = await fetch('http://10.0.2.2:80/api/getDivision.php', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: `stationName=${stationName}`,
+      });
+      const data = await response.json();
+      if (response.ok) {
+        // Here you can set the state or do something with the division data
+        console.log('Division:', data.division);
+      } else {
+        throw new Error(data.message);
+      }
+    } catch (error) {
+      console.error(error);
+      alert('An error occurred while fetching the division: ' + error.message);
+    }
+  };
+  const handleFormSubmit = async () => {
+    if (
+      customerName &&
+      customerNumber &&
+      carModel &&
+      carNumber 
+    ) {
+      const numericRegex = /^[0-9]*$/;
+      if (customerNumber.length !== 11 || !numericRegex.test(customerNumber)) {
+        alert('Please enter exactly 11 numeric digits for Contact Number');
+        return; // Do not submit the form if the condition is not met
+      }
+
+      const formData = new FormData();
+      formData.append('cusCode', customerCode);
+      formData.append('cusName', customerName);
+      formData.append('cusNum', customerNumber);
+      formData.append('carModel', carModel);
+      formData.append('carNum', carNumber);
+      formData.append('stationName', stationName);
+      formData.append('division', division);
+      formData.append('lubeName', lubeName);
+      formData.append('lubeLtr', lubeNumber);
+      formData.append('lubeCategory', lubeCategory);
+      formData.append('lubeQty', lubeQuantity);
+      // Format the date and time using moment.js
+    const formattedDateTime = moment(new Date()).format('YYYY-MM-DD HH:mm:ss');
+    formData.append('dateTime', formattedDateTime);
+      console.log('Form Data:', formData);
+
+  try {
+    setIsLoading(true);
+    const response = await fetch('http://10.0.2.2:80/api/form_insert.php', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+      
+      body: formData,
+    });
+    setIsLoading(false);
+    console.log('Raw Response:', response);
+
+    if (response.ok) {
+      // Play the success sound here
+      playSuccessSound();
+      alert('Data inserted successfully');
+      const responseData = await response.text();
+      console.log('Raw Response Data:', responseData);
+    } else {
+      throw new Error('An error occurred during the request');
+    }
+  } catch (error) {
+    setIsLoading(false);
+    console.error(error);
+    alert('An error occurred: ' + error.message);
+  }
+    onSubmit(formData);
+    onBackToGridPage();
+}
+else
+{
+  alert("PLEASE FILL IN ALL THE FIELDS")
+}
+  };
+  const handleGoToGridPage = () => {
+    // alert("GRID PAGE SUCCESSFULLY PRESSED")
+    onBackToGridPage(); // Simply call the onBackToGridPage callback to go back to GridPage
+  };
+
+  return (
+    <ImageBackground source={require('../PSO_APP/assets/BG_grid.png')} style={{ height: '100%', flexGrow: 1 }}>
+      <ScrollView contentContainerStyle={{ flexGrow: 1, backgroundColor: 'transparent' }}>
+
+        <View style={{ backgroundColor: 'transparent' }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', height: 60, backgroundColor: 'blue', paddingHorizontal: 0, width: '100%' }}>
+          <TouchableOpacity
+            style={{ backgroundColor: 'green', paddingVertical: 10, paddingHorizontal: 10, flex: 0.15 }}
+            onPress={handleGoToGridPage}
+          >
+            <Text style={{ fontSize: 15, fontWeight: '800', color: 'white', height:'100%'}}>
+              GO {'\n'}BACK
+            </Text>
+          </TouchableOpacity>
+          <Text style={{ fontSize: 28, fontWeight: '900', color: 'beige', paddingHorizontal:25, flex: 0.85}}>
+            CUSTOMER INFO
+          </Text>
+        </View>
+    <View style={{alignItems:'center', marginTop:10}}>
+    <View style={{width:370, backgroundColor:'#FED009', alignItems:'center', borderRadius:15, borderWidth:4, borderColor:'black', padding:10}}>
+      <Text style={{ fontSize: 27, fontWeight: '900', color: 'black',textAlign:'center', paddingHorizontal: 20 }}>
+      Pump Code: {customerCode}
+    </Text>
+    <Text style={{ fontSize: 17.5, fontWeight: '900', color: 'black',textAlign:'center', marginTop: 10, paddingHorizontal: 20 }}>
+      Station: {stationName}
+    </Text>
+    </View>
+  </View>
+      <Text style={{ fontSize: 22, fontWeight: '900',color:'black', marginTop: 12, paddingHorizontal: 20 }}>
+        Lube Category: {lubeCategory}
+      </Text>
+      <Text style={{ fontSize: 22, fontWeight: '900',color:'black', paddingHorizontal: 20 }}>
+        Lube Name: {lubeName}
+      </Text>
+      <Text style={{ fontSize: 22, fontWeight: '900',color:'black', marginBottom: 25, paddingHorizontal: 20 }}>
+        Lube Litre: {lubeNumber + ' LTR'}
+      </Text>
+
+      <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 20, paddingHorizontal: 20 }}>
+        <Text style={{ fontSize: 22, fontWeight: '900',color:'black', marginRight: 10 }}>Customer Name:</Text>
+        <TextInput
+          style={{ fontSize: 20,backgroundColor:'beige',fontWeight:'500', borderRadius:5, borderWidth: 3, borderColor: 'black', padding: 5, flex: 1, color:'black' }}
+          placeholder="Enter Name"
+          placeholderTextColor="black" 
+          value={customerName}
+          onChangeText={setCustomerName}
+        />
+      </View>
+
+      <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 20, paddingHorizontal: 20 }}>
+        <Text style={{ fontSize: 22, fontWeight: '900',color:'black', marginRight: 10 }}>Contact Number:</Text>
+        <TextInput
+          style={{ fontSize: 20,backgroundColor:'beige',fontWeight:'500', borderRadius:5, borderWidth: 3, borderColor: 'black', padding: 5, flex: 1 , color:'black'}}
+          placeholder="eg. 03xxxxxxxxx"
+          placeholderTextColor="black" 
+          value={customerNumber}
+          onChangeText={setCustomerNumber}
+          keyboardType="numeric"
+          maxLength={11}
+        />
+      </View>
+
+      <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 20, paddingHorizontal: 20 }}>
+        <Text style={{ fontSize: 22, fontWeight: '900',color:'black', marginRight: 32 }}>Vehicle Model:</Text>
+        <TextInput
+          style={{ fontSize: 20,backgroundColor:'beige',fontWeight:'500', borderRadius:5, borderWidth: 3, borderColor: 'black', padding: 5, flex: 1, color:'black' }}
+          placeholder="Enter Model"
+          placeholderTextColor="black" 
+          value={carModel}
+          onChangeText={setCarModel}
+        />
+      </View>
+
+      <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 20, paddingHorizontal: 20 }}>
+        <Text style={{ fontSize: 22, fontWeight: '900',color:'black', marginRight: 13 }}>Vehicle Number:</Text>
+        <TextInput
+          style={{ fontSize: 20,backgroundColor:'beige',fontWeight:'500', borderRadius:5, borderWidth: 3, borderColor: 'black', padding: 5, flex: 1, color:'black' }}
+          placeholder="eg. ABC-123"
+          placeholderTextColor="black" 
+          value={carNumber}
+          onChangeText={setCarNumber}
+        />
+      </View>
+      <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 20, paddingHorizontal: 40}}>
+          <Text style={{ fontSize: 22, fontWeight: '900', color: 'black', marginRight: 36 }}>No. of Cans:</Text>
+          <TextInput
+            style={{
+              fontSize: 20,
+              backgroundColor: 'beige',
+              fontWeight: '500',
+              borderRadius:5, 
+              borderWidth: 3,
+              borderColor: 'black',
+              padding: 5,
+              flex: 1,
+              color: 'black',
+            }}
+            placeholder="Enter Cans"
+            placeholderTextColor="black"
+            value={lubeQuantity}
+            onChangeText={handleLubeQuantityChange} // Handle the input change
+            keyboardType="numeric" // Show numeric keyboard on mobile devices
+          />
+        </View>
+
+      <View style={{ alignItems: 'center' }}>
+        <TouchableOpacity
+          style={{
+            backgroundColor: 'blue',
+            paddingVertical: 10,
+            marginTop:5,
+            paddingHorizontal: 20,
+            borderRadius: 30,
+            marginBottom: 10,
+            height: 53,
+            width: 110,
+          }}
+          onPress={handleFormSubmit}
+          disabled={isLoading}
+        >
+          {isLoading ? ( 
+            <ActivityIndicator color="white" size="small" />
+          ) : (
+            <Text style={{ fontSize: 20, textAlign: 'center', fontWeight: '900', color: 'white' }}>Submit</Text>
+          )}
+        </TouchableOpacity>
+      </View>
+    </View>
+        
+      </ScrollView>
+    </ImageBackground>
+  );
+};
+
+export default FormPage;
